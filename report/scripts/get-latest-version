@@ -1,6 +1,8 @@
 #! /bin/bash
 set -e
 
+GIT_REPO_PATH=$1
+
 echo "GET LATEST VERSION OF A REPOSITORY."
 echo "---------------------"
 echo "REPO....: ${GIT_REPO_PATH}"

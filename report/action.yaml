@@ -4,7 +4,7 @@ description: Get the latest version/tag from a repository
 inputs:
   git-repo-path:
     description: GitHub repository path (e.g., owner/repo)
-    required: false
+    required: true
     default: 'vrossiciandt/reusable'
 
 runs:
@@ -13,7 +13,5 @@ runs:
     - name: Get Latest Version
       id: get-version
       shell: bash
-      env:
-        GIT_REPO_PATH: ${{ inputs.git-repo-path }}
       run: |
-        ${{ github.action_path }}/scripts/get-latest-version
+        ${{ github.action_path }}/scripts/get-latest-version "${GIT_REPO_PATH}"
