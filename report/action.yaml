@@ -4,7 +4,7 @@ description: Get the latest version/tag from a repository
 inputs:
   git-repo-path:
     description: GitHub repository path (e.g., owner/repo)
-    required: true
+    required: false
     default: 'vrossiciandt/reusable'
 
 runs:
