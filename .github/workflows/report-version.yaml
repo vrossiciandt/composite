@@ -1,0 +1,23 @@
+name: Report Repository Latest Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      git-repo-path:
+        description: 'GitHub repository path (e.g., owner/repo)'
+        required: true
+        type: string
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Get Latest Version
+        id: version
+        uses: ./report
+        with:
+          git-repo-path: ${{ inputs.git-repo-path }}
