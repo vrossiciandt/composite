@@ -10,10 +10,16 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - id: setup-path
+      name: setup-path
+      shell: bash
+      run: |
+        echo "${{ github.action_path }}/scripts" | tee -a $GITHUB_PATH
+
     - name: Get Latest Version
       id: get-version
       shell: bash
       env:
         GIT_REPO_PATH: ${{ inputs.git-repo-path }}
       run: |
-        ${{ github.action_path }}/scripts/get-latest-version "${GIT_REPO_PATH}"
+        get-latest-version "${GIT_REPO_PATH}"
