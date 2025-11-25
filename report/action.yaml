@@ -13,5 +13,7 @@ runs:
     - name: Get Latest Version
       id: get-version
       shell: bash
+      env:
+        GIT_REPO_PATH: ${{ inputs.git-repo-path }}
       run: |
         ${{ github.action_path }}/scripts/get-latest-version "${GIT_REPO_PATH}"
