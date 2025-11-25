@@ -5,6 +5,7 @@ inputs:
   git-repo-path:
     description: GitHub repository path (e.g., owner/repo)
     required: true
+    default 'vrossiciandt/reusable'
 
 runs:
   using: "composite"
