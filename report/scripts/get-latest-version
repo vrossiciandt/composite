@@ -9,6 +9,8 @@ echo "REPO....: ${GIT_REPO_PATH}"
 
 echo "Retriving the lastest tag from ${GIT_REPO_PATH}..."
 
-TAG=$(curl -s "https://api.github.com/repos/${GIT_REPO_PATH}/tags" | jq -r '.[0].name')
+#TAG=$(curl -s "https://api.github.com/repos/${GIT_REPO_PATH}/tags" | jq -r '.[0].name')
+
+TAG=$(gh release view --repo ${GIT_REPO_PATH} --json tagName --jq '.tagName')
 
 echo "The lastest tag is ${TAG}."
