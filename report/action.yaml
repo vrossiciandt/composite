@@ -8,6 +8,6 @@ runs:
       run: ${GITHUB_ACTION_PATH}/scripts/get-latest-version
       shell: bash
     
-    - name: list files
-      run: ls -l
+    - name: tree
+      run: tree
       shell: bash
