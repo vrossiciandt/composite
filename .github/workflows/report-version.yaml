@@ -12,10 +12,14 @@ jobs:
         uses: actions/checkout@v5
 
       - name: checkout-sub-repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          repository: vrossiciandt/caller
+          repository: vrossiciandt/composite
           path: subrepo
 
       - name: get-latest-tag
         uses: vrossiciandt/composite/report@main
+        with:
+          file-path: subrepo/Chart.yaml
+          file-type: yaml
+          version-key: version
