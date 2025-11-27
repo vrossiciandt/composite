@@ -1,26 +1,21 @@
-name: Report Repository Latest Version
+name: caller
 
 on:
   workflow_dispatch:
-    inputs:
-      git-repo-path:
-        description: 'GitHub repository path (e.g., owner/repo)'
-        type: string
-
-permissions:
-  contents: read
-  actions: read
 
 jobs:
-  report:
+  composite:
+    name: Composite
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout
+      - name: checkout-main-repo
+        uses: actions/checkout@v5
+
+      - name: checkout-sub-repo
         uses: actions/checkout@v4
-      
-      - name: Get Latest Version
-        id: version
-        uses: ./report
         with:
-          git-repo-path: ${{ inputs.git-repo-path }}
+          repository: vrossiciandt/caller
+          path: subrepo
+
+      - name: get-latest-tag
+        uses: vrossiciant/composite@main

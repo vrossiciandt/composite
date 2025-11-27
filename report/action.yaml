@@ -1,25 +1,12 @@
-name: Report Repository Latest Version
-description: Get the latest version/tag from a repository
-
-inputs:
-  git-repo-path:
-    description: GitHub repository path (e.g., owner/repo)
-    required: false
-    default: 'vrossiciandt/reusable'
+name: composite-action
+description: get the latest tag
 
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - id: setup-path
-      name: setup-path
+    - name: get the latest tag
+      run: ${GITHUB_ACTION_PATH}/scripts/get-latest-version
       shell: bash
-      run: |
-        echo "${{ github.action_path }}/scripts" | tee -a $GITHUB_PATH
-
-    - name: Get Latest Version
-      id: get-version
-      shell: bash
-      env:
-        GIT_REPO_PATH: ${{ inputs.git-repo-path }}
-      run: |
-        get-latest-version "${GIT_REPO_PATH}"
+    
+    - name: list files
+      run: ls -l
