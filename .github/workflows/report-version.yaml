@@ -1,4 +1,4 @@
-name: caller
+name: composite
 
 on:
   workflow_dispatch:
@@ -18,4 +18,4 @@ jobs:
           path: subrepo
 
       - name: get-latest-tag
-        uses: vrossiciant/composite@main
+        uses: vrossiciandt/composite@main
