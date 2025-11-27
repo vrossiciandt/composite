@@ -1,13 +1,82 @@
-name: composite-action
-description: get the latest tag
-
+name: 'Extract Version from File'
+description: 'A composite action to extract version attribute from any file (YAML, JSON, etc)'
+inputs:
+  file-path:
+    description: 'Path to the file containing version info'
+    required: true
+  file-type:
+    description: 'File type: yaml, json, xml'
+    default: 'yaml'
+    required: false
+  version-key:
+    description: 'The key/path to extract version from (e.g., "version" or ".metadata.version")'
+    default: 'version'
+    required: false
+outputs:
+  version:
+    description: 'The extracted version'
+    value: ${{ steps.extract.outputs.version }}
+  status:
+    description: 'Status of extraction (success/failed)'
+    value: ${{ steps.extract.outputs.status }}
 runs:
-  using: composite
+  using: 'composite'
   steps:
-    - name: get the latest tag
-      run: ${GITHUB_ACTION_PATH}/scripts/get-latest-version
+    - name: Validate inputs
       shell: bash
-    
-    - name: tree
-      run: tree
+      run: |
+        if [ -z "${{ inputs.file-path }}" ]; then
+          echo "Error: file-path is required"
+          exit 1
+        fi
+        
+        if [ ! -f "${{ inputs.file-path }}" ]; then
+          echo "Error: File not found at ${{ inputs.file-path }}"
+          exit 1
+        fi
+
+    - name: Extract version
+      id: extract
       shell: bash
+      run: |
+        FILE_PATH="${{ inputs.file-path }}"
+        FILE_TYPE="${{ inputs.file-type }}"
+        VERSION_KEY="${{ inputs.version-key }}"
+        
+        echo "Extracting from: $FILE_PATH"
+        echo "Key: $VERSION_KEY"
+        
+        case "$FILE_TYPE" in
+          yaml|yml)
+            EXTRACTED=$(yq eval ".$VERSION_KEY" "$FILE_PATH")
+            ;;
+          json)
+            EXTRACTED=$(jq -r ".$VERSION_KEY" "$FILE_PATH")
+            ;;
+          *)
+            echo "Unsupported file type: $FILE_TYPE"
+            exit 1
+            ;;
+        esac
+        
+        if [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
+          echo "Error: Could not extract version from $VERSION_KEY"
+          exit 1
+        fi
+        
+        # Remove 'v' prefix if exists, to normalize
+        VERSION=$(echo "$EXTRACTED" | sed 's/^v//')
+        
+        echo "✓ Version extracted: $VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Output summary
+      shell: bash
+      run: |
+        echo "Extraction Summary"
+        echo "--------------------"
+        echo "File: ${{ inputs.file-path }}"
+        echo "Type: ${{ inputs.file-type }}"
+        echo "Key: ${{ inputs.version-key }}"
+        echo "Extracted Version: ${{ steps.extract.outputs.version }}"
