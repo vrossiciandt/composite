@@ -10,3 +10,4 @@ runs:
     
     - name: list files
       run: ls -l
+      shell: bash
