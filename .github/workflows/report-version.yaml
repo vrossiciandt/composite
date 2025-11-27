@@ -18,4 +18,4 @@ jobs:
           path: subrepo
 
       - name: get-latest-tag
-        uses: vrossiciandt/composite@main
+        uses: vrossiciandt/composite/report@main
