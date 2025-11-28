@@ -1,21 +1,22 @@
-name: 'Extract Version from File'
-description: 'A composite action to extract version attribute from any file (YAML, JSON, etc)'
+name: 'Extract Values from Structured File'
+description: 'Extract one or multiple values from structured files (YAML or JSON)'
 inputs:
   file-path:
-    description: 'Path to the file containing version info'
+    description: 'Path to the file containing the data'
     required: true
   file-type:
-    description: 'File type: yaml, json, xml'
-    default: 'yaml'
-    required: false
-  version-key:
-    description: 'The key/path to extract version from (e.g., "version" or ".metadata.version")'
-    default: 'version'
-    required: false
+    description: 'yaml or json'
+    required: true
+  attributes:
+    description: 'JSON object with attribute names as keys and paths as values. Example: {"version": "version", "name": "metadata.name"}. For single value, use: {"value": "version"}'
+    required: true
 outputs:
-  version:
-    description: 'The extracted version'
-    value: ${{ steps.extract.outputs.version }}
+  values:
+    description: 'JSON object with all extracted values'
+    value: ${{ steps.extract.outputs.values }}
+  count:
+    description: 'Number of values successfully extracted'
+    value: ${{ steps.extract.outputs.count }}
   status:
     description: 'Status of extraction (success/failed)'
     value: ${{ steps.extract.outputs.status }}
@@ -25,8 +26,8 @@ runs:
     - name: Validate inputs
       shell: bash
       run: |
-        if [ -z "${{ inputs.file-path }}" ]; then
-          echo "Error: file-path is required"
+        if [ -z "${{ inputs.file-path }}" ] || [ -z "${{ inputs.attributes }}" ]; then
+          echo "Error: file-path and attributes are required"
           exit 1
         fi
         
@@ -35,48 +36,71 @@ runs:
           exit 1
         fi
 
-    - name: Extract version
+    - name: Extract values
       id: extract
       shell: bash
       run: |
         FILE_PATH="${{ inputs.file-path }}"
         FILE_TYPE="${{ inputs.file-type }}"
-        VERSION_KEY="${{ inputs.version-key }}"
+        ATTRIBUTES='${{ inputs.attributes }}'
         
-        echo "Extracting from: $FILE_PATH"
-        echo "Key: $VERSION_KEY"
+        echo "📄 Extracting from: $FILE_PATH"
+        echo "📋 File type: $FILE_TYPE"
         
-        case "$FILE_TYPE" in
-          yaml|yml)
-            EXTRACTED=$(yq eval ".$VERSION_KEY" "$FILE_PATH")
-            ;;
-          json)
-            EXTRACTED=$(jq -r ".$VERSION_KEY" "$FILE_PATH")
-            ;;
-          *)
-            echo "Unsupported file type: $FILE_TYPE"
-            exit 1
-            ;;
-        esac
+        # Inicializar objeto JSON resultado
+        RESULT="{}"
+        COUNT=0
+        ERROR_COUNT=0
         
-        if [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
-          echo "Error: Could not extract version from $VERSION_KEY"
-          exit 1
-        fi
+        # Iterar sobre cada atributo definido
+        ATTRIBUTE_KEYS=$(echo "$ATTRIBUTES" | jq -r 'keys[]')
         
-        # Remove 'v' prefix if exists, to normalize
-        VERSION=$(echo "$EXTRACTED" | sed 's/^v//')
+        while IFS= read -r key; do
+          ATTRIBUTE_KEY=$(echo "$ATTRIBUTES" | jq -r ".\"$key\"")
+          
+          echo "  ├─ Extracting: $key (path: $ATTRIBUTE_KEY)"
+          
+          case "$FILE_TYPE" in
+            yaml|yml)
+              EXTRACTED=$(yq eval ".$ATTRIBUTE_KEY" "$FILE_PATH" 2>&1)
+              ;;
+            json)
+              EXTRACTED=$(jq -r ".$ATTRIBUTE_KEY" "$FILE_PATH" 2>&1)
+              ;;
+            *)
+              echo "    ❌ Unsupported file type: $FILE_TYPE"
+              exit 1
+              ;;
+          esac
+          
+          if [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
+            echo "    ⚠️  Not found or empty"
+            RESULT=$(echo "$RESULT" | jq --arg k "$key" '.[$k] = null')
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+          else
+            echo "    ✓ Found: $EXTRACTED"
+            RESULT=$(echo "$RESULT" | jq --arg k "$key" --arg v "$EXTRACTED" '.[$k] = $v')
+            COUNT=$((COUNT + 1))
+          fi
+        done <<< "$ATTRIBUTE_KEYS"
         
-        echo "✓ Version extracted: $VERSION"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo ""
+        echo "✓ Extraction complete"
+        
+        # Escapar resultado para output
+        RESULT_ESCAPED=$(echo "$RESULT" | jq -c .)
+        echo "values=$RESULT_ESCAPED" >> $GITHUB_OUTPUT
+        echo "count=$COUNT" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Output summary
       shell: bash
       run: |
-        echo "Extraction Summary"
-        echo "--------------------"
+        echo "📊 Extraction Summary"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "File: ${{ inputs.file-path }}"
         echo "Type: ${{ inputs.file-type }}"
-        echo "Key: ${{ inputs.version-key }}"
-        echo "Extracted Version: ${{ steps.extract.outputs.version }}"
+        echo "Values extracted: ${{ steps.extract.outputs.count }}"
+        echo ""
+        echo "Results:"
+        echo "${{ steps.extract.outputs.values }}" | jq '.'
