@@ -79,6 +79,7 @@ runs:
             ERROR_COUNT=$((ERROR_COUNT + 1))
           else
             echo "    ✓ Found: $EXTRACTED"
+            # IMPORTANTE: Sempre converter para string com --arg
             RESULT=$(echo "$RESULT" | jq --arg k "$key" --arg v "$EXTRACTED" '.[$k] = $v')
             COUNT=$((COUNT + 1))
           fi
@@ -87,11 +88,20 @@ runs:
         echo ""
         echo "✓ Extraction complete"
         
-        # Escapar resultado para output
-        RESULT_ESCAPED=$(echo "$RESULT" | jq -c .)
-        echo "values=$RESULT_ESCAPED" >> $GITHUB_OUTPUT
-        echo "count=$COUNT" >> $GITHUB_OUTPUT
-        echo "status=success" >> $GITHUB_OUTPUT
+        # Salvar resultado em temp para output
+        echo "$RESULT" > /tmp/extraction_result.json
+        
+        # Ler e escapar para output de forma segura
+        VALUES_JSON=$(cat /tmp/extraction_result.json)
+        
+        # Usar heredoc para evitar problemas com caracteres especiais
+        {
+          echo "values<<EXTRACTION_EOF"
+          echo "$VALUES_JSON"
+          echo "EXTRACTION_EOF"
+          echo "count=$COUNT"
+          echo "status=success"
+        } >> $GITHUB_OUTPUT
 
     - name: Output summary
       shell: bash
@@ -103,4 +113,4 @@ runs:
         echo "Values extracted: ${{ steps.extract.outputs.count }}"
         echo ""
         echo "Results:"
-        echo "${{ steps.extract.outputs.values }}" | jq '.'
+        echo "${{ steps.extract.outputs.values }}" | jq '.' 2>/dev/null || echo "${{ steps.extract.outputs.values }}"
