@@ -22,4 +22,7 @@ jobs:
         with:
           file-path: subrepo/Chart.yaml
           file-type: yaml
-          version-key: version
+          attributes: |
+            {
+              "version": "version"
+            }
